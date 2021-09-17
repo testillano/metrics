@@ -1,0 +1,37 @@
+ARG base_tag=latest
+FROM alpine:${base_tag}
+MAINTAINER testillano
+
+LABEL testillano.metrics_builder.description="Docker image to build ert_metrics library"
+
+WORKDIR /code/build
+
+ARG make_procs=4
+ARG build_type=Release
+ARG jupp0r_prometheuscpp_ver=v0.13.0
+ARG civetweb_civetweb_ver=v1.14
+
+RUN apk update && apk add \
+    build-base cmake wget tar \
+    doxygen graphviz \
+    git \
+    zlib-static
+
+# jupp0r prometheus-cpp
+RUN apk add zlib-dev curl-dev
+RUN set -x && \
+    wget https://github.com/jupp0r/prometheus-cpp/archive/refs/tags/${jupp0r_prometheuscpp_ver}.tar.gz && \
+    tar xvf ${jupp0r_prometheuscpp_ver}.tar.gz && cd prometheus-cpp*/3rdparty && \
+    wget https://github.com/civetweb/civetweb/archive/refs/tags/${civetweb_civetweb_ver}.tar.gz && \
+    tar xvf ${civetweb_civetweb_ver}.tar.gz && mv civetweb-*/* civetweb && cd .. && \
+    mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=${build_type} -DENABLE_TESTING=OFF .. && \
+    make -j${make_procs} && make install && \
+    cd .. && rm -rf * && \
+    set +x
+
+# Build script
+COPY deps/build.sh /var
+RUN chmod a+x /var/build.sh
+
+ENTRYPOINT ["/var/build.sh"]
+CMD []
