@@ -31,13 +31,125 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <ert/tracing/Logger.hpp>
 
 #include <ert/metrics/Metrics.hpp>
+#include <exception>
+#include <iostream>
 
 namespace ert
 {
 namespace metrics
 {
 
+bool Metrics::serve(const std::string & endpoint)
+{
+
+    try {
+        exposer_ = new prometheus::Exposer({endpoint});
+    }
+    catch(...)
+    {
+        ert::tracing::Logger::error("Initialization error (prometheus interface)", ERT_FILE_LOCATION);
+        return false;
+    }
+
+    exposer_->RegisterCollectable(registry_);
+
+    return true;
+}
+
+counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels)
+{
+    auto fit = counter_families_.find(name);
+    if (fit != counter_families_.end())
+    {
+        ert::tracing::Logger::error("counter family already registered", ERT_FILE_LOCATION);
+    }
+
+    auto& cf = prometheus::BuildCounter().Name(name).Help(help).Labels(labels).Register(*registry_);
+    counter_families_.emplace(name, cf);
+
+    return cf;
+}
+
+gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels)
+{
+    auto it = gauge_families_.find(name);
+    if (it != gauge_families_.end())
+    {
+        ert::tracing::Logger::error("gauge family already registered", ERT_FILE_LOCATION);
+    }
+
+    auto& gf = prometheus::BuildGauge().Name(name).Help(help).Labels(labels).Register(*registry_);
+    gauge_families_.emplace(name, gf);
+
+    return gf;
+}
+
+histogram_family_ref_t Metrics::addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels)
+{
+    auto it = histogram_families_.find(name);
+    if (it != histogram_families_.end())
+    {
+        ert::tracing::Logger::error("histogram family already registered", ERT_FILE_LOCATION);
+    }
+
+    auto& hf = prometheus::BuildHistogram().Name(name).Help(help).Labels(labels).Register(*registry_);
+    histogram_families_.emplace(name, hf);
+
+    return hf;
+}
+
+void Metrics::increaseCounter(const std::string &familyName, const labels_t &labels, double value)
+{
+    auto fit = counter_families_.find(familyName);
+    if (fit == counter_families_.end())
+    {
+        ert::tracing::Logger::error("counter family not found", ERT_FILE_LOCATION);
+    }
+
+    try {
+        (fit -> second).Add(labels).Increment(value); // negative values are ignored by prometheus-cpp
+    }
+    catch(std::exception &e) {
+        ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
+    }
+}
+
+void Metrics::setGauge(const std::string &familyName, const labels_t &labels, double value)
+{
+    auto it = gauge_families_.find(familyName);
+    if (it == gauge_families_.end())
+    {
+        ert::tracing::Logger::error("gauge family not found", ERT_FILE_LOCATION);
+    }
+
+    try {
+        (it -> second).Add(labels).Set(value);
+    }
+    catch(std::exception &e) {
+        ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
+    }
+}
+
+void Metrics::observeHistogram(const std::string &familyName, const labels_t &labels, double value, const bucket_boundaries_t & bucketBoundaries)
+{
+    auto it = histogram_families_.find(familyName);
+    if (it == histogram_families_.end())
+    {
+        ert::tracing::Logger::error("histogram family not found", ERT_FILE_LOCATION);
+    }
+
+    try {
+        (it -> second).Add(labels, bucketBoundaries).Observe(value);
+    }
+    catch(std::exception &e) {
+        ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
+    }
+}
+
+
 }
 }
+

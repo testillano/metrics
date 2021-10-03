@@ -8,6 +8,7 @@ WORKDIR /code/build
 
 ARG make_procs=4
 ARG build_type=Release
+ARG ert_logger_ver=v1.0.9
 ARG jupp0r_prometheuscpp_ver=v0.13.0
 ARG civetweb_civetweb_ver=v1.14
 
@@ -16,6 +17,13 @@ RUN apk update && apk add \
     doxygen graphviz \
     git \
     zlib-static
+
+# ert_logger
+RUN set -x && \
+    wget https://github.com/testillano/logger/archive/${ert_logger_ver}.tar.gz && tar xvf ${ert_logger_ver}.tar.gz && cd logger-*/ && \
+    cmake -DERT_LOGGER_BuildExamples=OFF -DCMAKE_BUILD_TYPE=${build_type} . && make -j${make_procs} && make install && \
+    cd .. && rm -rf * && \
+    set +x
 
 # jupp0r prometheus-cpp
 RUN apk add zlib-dev curl-dev

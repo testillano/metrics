@@ -34,129 +34,73 @@ SOFTWARE.
 #pragma once
 
 #include <prometheus/counter.h>
+#include <prometheus/gauge.h>
+#include <prometheus/histogram.h>
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>
-#include <array>
-#include <cstdlib>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
-#include <iostream>
+//#include <exception>
+
 
 namespace ert
 {
 namespace metrics
 {
 
+typedef std::map<std::string, std::string> labels_t;
+
+typedef prometheus::Counter counter_t;
+typedef counter_t& counter_ref_t;
+typedef prometheus::Gauge gauge_t;
+typedef gauge_t& gauge_ref_t;
+typedef prometheus::Histogram histogram_t;
+typedef histogram_t& histogram_ref_t;
+typedef std::vector<double> bucket_boundaries_t;
+
 typedef prometheus::Family<prometheus::Counter> counter_family_t;
 typedef counter_family_t& counter_family_ref_t;
 typedef prometheus::Family<prometheus::Gauge> gauge_family_t;
 typedef gauge_family_t& gauge_family_ref_t;
-//typedef prometheus::Family<prometheus::Histogram> histogram_family_t;
-//typedef histogram_family_t& histogram_family_ref_t;
+typedef prometheus::Family<prometheus::Histogram> histogram_family_t;
+typedef histogram_family_t& histogram_family_ref_t;
 
 typedef std::unordered_map<std::string, counter_family_ref_t> counter_family_map_t;
-
+typedef std::unordered_map<std::string, gauge_family_ref_t> gauge_family_map_t;
+typedef std::unordered_map<std::string, histogram_family_ref_t> histogram_family_map_t;
 
 class Metrics {
 
     std::shared_ptr<prometheus::Registry> registry_;
+    prometheus::Exposer *exposer_;
+
     counter_family_map_t counter_families_;
+    gauge_family_map_t gauge_families_;
+    histogram_family_map_t histogram_families_;
 
 public:
 
-Metrics(std::shared_ptr<prometheus::Registry> registry) {
-    registry_ = registry;
+    Metrics() {
+        registry_ = std::make_shared<prometheus::Registry>();
+        exposer_ = nullptr;
+    }
+
+    bool serve(const std::string & endpoint = "0.0.0.0:8080");
+
+    // Statically counter creation:
+    // counter_family_ref_t cf = addCounterFamily(...)
+    // counter_ref_t counter = cf.Add(<labels>);
+    counter_family_ref_t addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
+    gauge_family_ref_t addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
+    histogram_family_ref_t addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
 
 
-    auto cf = prometheus::BuildCounter().Name("http2_traffic_messages_total")
-            .Help("Number of processed traffic messages");
-
-    counter_families_.emplace("http2_traffic_messages_total", cf.Register(*registry_));
-
-
-    //http2_admin_requests_total.Register(*registry_);
-}
-
-counter_family_ref_t getCounterFamily(const std::string &name) const {
-    auto it = counter_families_.find(name);
-    if (it != counter_families_.end())
-        return it->second;
-}
-/*
-    counter_family_ref_t &http2_traffic_messages_total = prometheus::BuildCounter()
-            .Name("http2_traffic_messages_total")
-            .Help("Number of processed traffic messages")
-            .Register(*registry_);
-    gauge_family_ref_t &http2_traffic_requests_processing_seconds = prometheus::BuildGauge()
-            .Name("http2_traffic_requests_processing_seconds")
-            .Help("Traffic requests processing time")
-            .Register(*registry_);
-    gauge_family_ref_t &http2_traffic_messages_size_bytes = prometheus::BuildGauge()
-            .Name("http2_messahttp2_traffic_messages_size_bytesges_size_bytes")
-            .Help("Size of observed traffic messages")
-            .Register(*registry_);
-            */
-    //counter_family_ref_t &http2_admin_requests_total = prometheus::BuildCounter()
-      //      .Name("http2_admin_requests_total")
-        //    .Help("Number of Administrative Interface HTTP/2 requests");
-
-    // // pseudo metrics for running binary:
-    // counter_family_ref_t &process_build_info = prometheus::BuildCounter()
-    //         .Name("process_build_info")
-    //         .Help("Process build information")
-    //         .Register(*registry_);
-    // counter_family_ref_t &process_execution_info = prometheus::BuildCounter()
-    //         .Name("process_execution_info")
-    //         .Help("rocess execution information")
-    //         .Register(*registry_);
-
-/*
-    // add a counter whose dimensional data is not known at compile time
-    //prometheus::Counter& http2_admin_requests_total_provision = http2_admin_requests_total.Add({{"operation", "server-provision"}});
-    //prometheus::Counter& http2_admin_requests_total_matching = http2_admin_requests_total.Add({{"operation", "server-matching"}});
-    //prometheus::Counter& http2_admin_requests_total_data = http2_admin_requests_total.Add({{"operation", "server-data"}});
-    //prometheus::Counter& http2_admin_requests_total_logging = http2_admin_requests_total.Add({{"operation", "logging"}});
-    //prometheus::Counter& http2_admin_requests_total_unsupported = http2_admin_requests_total.Add({{"operation", "unsupported"}});
-
-    // Add and remember dimensional data, incrementing those is very cheap
-    prometheus::Counter& http2_traffic_messages_total_rx_post = http2_traffic_messages_total.Add({{"direction", "rx"}, {"method", "POST"}});
-    prometheus::Counter& http2_traffic_messages_total_rx_get = http2_traffic_messages_total.Add({{"direction", "rx"}, {"method", "GET"}});
-    prometheus::Counter& http2_traffic_messages_total_rx_put = http2_traffic_messages_total.Add({{"direction", "rx"}, {"method", "PUT"}});
-    prometheus::Counter& http2_traffic_messages_total_rx_delete = http2_traffic_messages_total.Add({{"direction", "rx"}, {"method", "DELETE"}});
-    prometheus::Counter& http2_traffic_messages_total_rx_head = http2_traffic_messages_total.Add({{"direction", "rx"}, {"method", "HEAD"}});
-
-    prometheus::Counter& http2_traffic_messages_total_tx_post = http2_traffic_messages_total.Add({{"direction", "tx"}, {"method", "POST"}});
-    prometheus::Counter& http2_traffic_messages_total_tx_get = http2_traffic_messages_total.Add({{"direction", "tx"}, {"method", "GET"}});
-    prometheus::Counter& http2_traffic_messages_total_tx_put = http2_traffic_messages_total.Add({{"direction", "tx"}, {"method", "PUT"}});
-    prometheus::Counter& http2_traffic_messages_total_tx_delete = http2_traffic_messages_total.Add({{"direction", "tx"}, {"method", "DELETE"}});
-    prometheus::Counter& http2_traffic_messages_total_tx_head = http2_traffic_messages_total.Add({{"direction", "tx"}, {"method", "HEAD"}});
-
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_rx_post = http2_traffic_requests_processing_seconds.Add({{"direction", "rx"}, {"method", "POST"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_rx_get = http2_traffic_requests_processing_seconds.Add({{"direction", "rx"}, {"method", "GET"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_rx_put = http2_traffic_requests_processing_seconds.Add({{"direction", "rx"}, {"method", "PUT"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_rx_delete = http2_traffic_requests_processing_seconds.Add({{"direction", "rx"}, {"method", "DELETE"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_rx_head = http2_traffic_requests_processing_seconds.Add({{"direction", "rx"}, {"method", "HEAD"}});
-
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_tx_post = http2_traffic_requests_processing_seconds.Add({{"direction", "tx"}, {"method", "POST"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_tx_get = http2_traffic_requests_processing_seconds.Add({{"direction", "tx"}, {"method", "GET"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_tx_put = http2_traffic_requests_processing_seconds.Add({{"direction", "tx"}, {"method", "PUT"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_tx_delete = http2_traffic_requests_processing_seconds.Add({{"direction", "tx"}, {"method", "DELETE"}});
-    prometheus::Gauge& http2_traffic_requests_processing_seconds_tx_head = http2_traffic_requests_processing_seconds.Add({{"direction", "tx"}, {"method", "HEAD"}});
-
-    prometheus::Gauge& http2_traffic_messages_size_bytes_rx_post = http2_traffic_messages_size_bytes.Add({{"direction", "rx"}, {"method", "POST"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_rx_get = http2_traffic_messages_size_bytes.Add({{"direction", "rx"}, {"method", "GET"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_rx_put = http2_traffic_messages_size_bytes.Add({{"direction", "rx"}, {"method", "PUT"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_rx_delete = http2_traffic_messages_size_bytes.Add({{"direction", "rx"}, {"method", "DELETE"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_rx_head = http2_traffic_messages_size_bytes.Add({{"direction", "rx"}, {"method", "HEAD"}});
-
-    prometheus::Gauge& http2_traffic_messages_size_bytes_tx_post = http2_traffic_messages_size_bytes.Add({{"direction", "tx"}, {"method", "POST"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_tx_get = http2_traffic_messages_size_bytes.Add({{"direction", "tx"}, {"method", "GET"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_tx_put = http2_traffic_messages_size_bytes.Add({{"direction", "tx"}, {"method", "PUT"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_tx_delete = http2_traffic_messages_size_bytes.Add({{"direction", "tx"}, {"method", "DELETE"}});
-    prometheus::Gauge& http2_traffic_messages_size_bytes_tx_head = http2_traffic_messages_size_bytes.Add({{"direction", "tx"}, {"method", "HEAD"}});
-    */
+    // dynamically calling Family<T>.Add() works but is slow and should be avoided:
+    void increaseCounter(const std::string &familyName, const labels_t &labels, double value = 1.0);
+    void setGauge(const std::string &familyName, const labels_t &labels, double value);
+    void observeHistogram(const std::string &familyName, const labels_t &labels, double value, const bucket_boundaries_t & bucketBoundaries);
 };
 
 }
