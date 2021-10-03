@@ -87,6 +87,10 @@ public:
         exposer_ = nullptr;
     }
 
+    ~Metrics() {
+        delete(exposer_);
+    }
+
     bool serve(const std::string & endpoint = "0.0.0.0:8080");
 
     // Statically counter creation:
