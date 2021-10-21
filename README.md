@@ -4,7 +4,7 @@
 [![Documentation](https://codedocs.xyz/testillano/metrics.svg)](https://codedocs.xyz/testillano/metrics/index.html)
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/testillano)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/testillano/metrics/graphs/commit-activity)
-[![Build docker image and publish to Docker Hub](https://github.com/testillano/metrics/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/testillano/metrics/actions/workflows/docker-publish.yml)
+[![Main project workflow](https://github.com/testillano/metrics/actions/workflows/ci.yml/badge.svg)](https://github.com/testillano/metrics/actions/workflows/ci.yml)
 
 This library is based on @jupp0r prometheus-cpp library (https://github.com/jupp0r/prometheus-cpp).
 It offers a quick way to instantiate an object to ease metrics creation and management from every program module.
@@ -205,6 +205,6 @@ Please, execute `astyle` formatting (using [frankwolf image](https://hub.docker.
 
 ```bash
 $ sources=$(find . -name "*.hpp" -o -name "*.cpp")
-$ docker run -it --rm -v $PWD:/data frankwolf/astyle ${sources}
+$ docker run -i --rm -v $PWD:/data frankwolf/astyle ${sources}
 ```
 

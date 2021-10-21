@@ -1,4 +1,4 @@
-name: Build docker image and publish to Docker Hub
+name: Main project workflow
 on:
   # Build on demand:
   workflow_dispatch:
@@ -24,6 +24,20 @@ on:
   #  types: [published]
 
 jobs:
+  format_style:
+    name: Check source code format
+    runs-on: ubuntu-latest
+    steps:
+    -
+      name: Check out the repo
+      uses: actions/checkout@v2
+    -
+      name: Run frankwolf format
+      run: |
+          sources=$(find . -name "*.hpp" -o -name "*.cpp")
+          docker run -i --rm -v $PWD:/data frankwolf/astyle ${sources}
+          git diff --exit-code
+
   build_and_push:
     name: Build and push docker images to Docker Hub
     runs-on: ubuntu-latest

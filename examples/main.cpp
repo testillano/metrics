@@ -66,10 +66,12 @@ public:
             ert::metrics::counter_family_ref_t cf = metrics->addCounterFamily("observed_user_signals_total", "Number of observed user signals");
             ert::metrics::gauge_family_ref_t gf = metrics->addGaugeFamily("current_seconds", "Number of observed user signals");
             ert::metrics::histogram_family_ref_t hf = metrics->addHistogramFamily("random_time_responses", "Random response time");
+/*
             histogram_boundaries_.push_back(15.0);
             histogram_boundaries_.push_back(20.0);
             histogram_boundaries_.push_back(25.0);
             histogram_boundaries_.push_back(30.0);
+*/
 
             //ert::metrics::counter_ref_t c = cf.Add({{"signal", "SIGUSR1"}});
             count_sigusr1_ = &(cf.Add({{"signal", "SIGUSR1"}}));
