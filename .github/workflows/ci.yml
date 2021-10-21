@@ -35,7 +35,7 @@ jobs:
       name: Run frankwolf format
       run: |
           sources=$(find . -name "*.hpp" -o -name "*.cpp")
-          sudo docker run -i --rm -v $PWD:/data frankwolf/astyle ${sources}
+          sudo docker run -i --rm -v $PWD:/data frankwolf/astyle -n ${sources}
           git diff --exit-code
 
   build_and_push:
