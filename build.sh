@@ -10,6 +10,7 @@ build_type__dflt=Release
 ert_logger_ver__dflt=v1.0.9
 jupp0r_prometheuscpp_ver__dflt=v0.13.0
 civetweb_civetweb_ver__dflt=v1.14
+registry=ghcr.io/testillano
 
 #############
 # FUNCTIONS #
@@ -87,7 +88,7 @@ build_builder_image() {
   set -x
   rm -f CMakeCache.txt
   # shellcheck disable=SC2086
-  docker build --rm ${DBUILD_XTRA_OPTS} ${bargs} -f Dockerfile.build -t testillano/metrics_builder:"${image_tag}" . || return 1
+  docker build --rm ${DBUILD_XTRA_OPTS} ${bargs} -f Dockerfile.build -t ${registry}/metrics_builder:"${image_tag}" . || return 1
   set +x
 }
 
@@ -104,9 +105,9 @@ build_project() {
   set -x
   rm -f CMakeCache.txt
   # shellcheck disable=SC2086
-  docker run --rm -it -u "$(id -u):$(id -g)" ${envs} -v "${PWD}":/code -w /code testillano/metrics_builder:"${base_tag}" || return 1
+  docker run --rm -it -u "$(id -u):$(id -g)" ${envs} -v "${PWD}":/code -w /code ${registry}/metrics_builder:"${base_tag}" || return 1
   # shellcheck disable=SC2086
-  docker run --rm -it -u "$(id -u):$(id -g)" ${envs} -v "${PWD}":/code -w /code testillano/metrics_builder:"${base_tag}" "" doc || return 1
+  docker run --rm -it -u "$(id -u):$(id -g)" ${envs} -v "${PWD}":/code -w /code ${registry}/metrics_builder:"${base_tag}" "" doc || return 1
   set +x
 }
 
@@ -126,7 +127,7 @@ build_project_image() {
   set -x
   rm -f CMakeCache.txt
   # shellcheck disable=SC2086
-  docker build --rm ${DBUILD_XTRA_OPTS} ${bargs} -t testillano/metrics:"${image_tag}" . || return 1
+  docker build --rm ${DBUILD_XTRA_OPTS} ${bargs} -t ${registry}/metrics:"${image_tag}" . || return 1
   set +x
 }
 
