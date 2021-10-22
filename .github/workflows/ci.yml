@@ -57,6 +57,16 @@ jobs:
           # logout at job end:
           logout: true
       -
+        name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          # Github token:
+          password: ${{ secrets.PERSONAL_ACCESS_TOKEN_REPO_FULL }}
+          # logout at job end:
+          logout: true
+      -
         name: Build (but not push) builder image
         id: docker_build1
         uses: docker/build-push-action@v2
@@ -82,11 +92,8 @@ jobs:
         name: Image2 digest
         run: echo ${{ steps.docker_build2.outputs.digest }}
       -
-        name: Push images manually
+        name: Push images to Dockerhub
         run: |
-          IMAGE_ID1=docker.io/testillano/metrics_builder
-          IMAGE_ID2=docker.io/testillano/metrics
-
           # workflow dispatch event:
           image_tag=${{ github.event.inputs.tag }}
           echo Workflow dispatch image_tag=$image_tag
@@ -102,8 +109,12 @@ jobs:
 
           echo Processed image_tag=$image_tag
 
-          docker tag testillano/metrics_builder:local $IMAGE_ID1:$image_tag
-          docker tag testillano/metrics:local $IMAGE_ID2:$image_tag
-
-          docker push $IMAGE_ID1:$image_tag
-          docker push $IMAGE_ID2:$image_tag
+          for hub in docker.io ghcr.io
+          do
+            for imgbn in metrics_builder metrics
+            do
+              echo "Push '${imgbn}' image to '${hub}' hub"
+              docker tag testillano/${imgbn}:local ${hub}/testillano/${imgbn}:${image_tag}
+              docker push ${hub}/testillano/${imgbn}:${image_tag}
+            done
+          done
