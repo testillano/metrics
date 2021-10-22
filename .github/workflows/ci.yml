@@ -91,7 +91,7 @@ jobs:
         name: Image2 digest
         run: echo ${{ steps.docker_build2.outputs.digest }}
       -
-        name: Push images to Dockerhub and GitHub Container Registry
+        name: Push images manually
         run: |
           # workflow dispatch event:
           image_tag=${{ github.event.inputs.tag }}
