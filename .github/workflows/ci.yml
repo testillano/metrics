@@ -63,7 +63,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           # Github token:
-          password: ${{ secrets.PERSONAL_ACCESS_TOKEN_REPO_FULL }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           # logout at job end:
           logout: true
       -
