@@ -1,5 +1,5 @@
 ARG base_tag=latest
-FROM testillano/metrics_builder:${base_tag}
+FROM ghcr.io/testillano/metrics_builder:${base_tag}
 MAINTAINER testillano
 
 LABEL testillano.metrics.description="ert_metrics library image"

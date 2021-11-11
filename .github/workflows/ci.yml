@@ -70,7 +70,7 @@ jobs:
       id: docker_build1
       uses: docker/build-push-action@v2
       with:
-        tags: testillano/metrics_builder:local
+        tags: ghcr.io/testillano/metrics_builder:local
         file: Dockerfile.build
         context: .
         #push: true
@@ -82,7 +82,7 @@ jobs:
       id: docker_build2
       uses: docker/build-push-action@v2
       with:
-        tags: testillano/metrics:local
+        tags: ghcr.io/testillano/metrics:local
         file: Dockerfile
         context: .
         #push: true
@@ -113,7 +113,7 @@ jobs:
           for imgbn in metrics_builder metrics
           do
             echo "Push '${imgbn}' image to '${hub}' hub"
-            docker tag testillano/${imgbn}:local ${hub}/testillano/${imgbn}:${image_tag}
+            docker tag ghcr.io/testillano/${imgbn}:local ${hub}/testillano/${imgbn}:${image_tag}
             docker push ${hub}/testillano/${imgbn}:${image_tag}
           done
         done
