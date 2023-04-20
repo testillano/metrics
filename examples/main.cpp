@@ -64,7 +64,7 @@ public:
     Observer(ert::metrics::Metrics *metrics) {
         try {
             ert::metrics::counter_family_ref_t cf = metrics->addCounterFamily("observed_user_signals_total", "Number of observed user signals");
-            ert::metrics::gauge_family_ref_t gf = metrics->addGaugeFamily("current_seconds", "Number of observed user signals");
+            ert::metrics::gauge_family_ref_t gf = metrics->addGaugeFamily("current_seconds", "Instant random response time");
             ert::metrics::histogram_family_ref_t hf = metrics->addHistogramFamily("random_time_responses", "Random response time");
             /*
                         histogram_boundaries_.push_back(15.0);

@@ -65,6 +65,7 @@ counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const st
     if (fit != counter_families_.end())
     {
         ert::tracing::Logger::error("counter family already registered", ERT_FILE_LOCATION);
+        return fit->second;
     }
 
     auto& cf = prometheus::BuildCounter().Name(name).Help(help).Labels(labels).Register(*registry_);
@@ -75,10 +76,11 @@ counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const st
 
 gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
-    auto it = gauge_families_.find(name);
-    if (it != gauge_families_.end())
+    auto fit = gauge_families_.find(name);
+    if (fit != gauge_families_.end())
     {
         ert::tracing::Logger::error("gauge family already registered", ERT_FILE_LOCATION);
+        return fit->second;
     }
 
     auto& gf = prometheus::BuildGauge().Name(name).Help(help).Labels(labels).Register(*registry_);
@@ -89,10 +91,11 @@ gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::s
 
 histogram_family_ref_t Metrics::addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
-    auto it = histogram_families_.find(name);
-    if (it != histogram_families_.end())
+    auto fit = histogram_families_.find(name);
+    if (fit != histogram_families_.end())
     {
         ert::tracing::Logger::error("histogram family already registered", ERT_FILE_LOCATION);
+        return fit->second;
     }
 
     auto& hf = prometheus::BuildHistogram().Name(name).Help(help).Labels(labels).Register(*registry_);
@@ -107,6 +110,7 @@ void Metrics::increaseCounter(const std::string &familyName, const labels_t &lab
     if (fit == counter_families_.end())
     {
         ert::tracing::Logger::error("counter family not found", ERT_FILE_LOCATION);
+        return;
     }
 
     try {
@@ -119,14 +123,15 @@ void Metrics::increaseCounter(const std::string &familyName, const labels_t &lab
 
 void Metrics::setGauge(const std::string &familyName, const labels_t &labels, double value)
 {
-    auto it = gauge_families_.find(familyName);
-    if (it == gauge_families_.end())
+    auto fit = gauge_families_.find(familyName);
+    if (fit == gauge_families_.end())
     {
         ert::tracing::Logger::error("gauge family not found", ERT_FILE_LOCATION);
+        return;
     }
 
     try {
-        (it -> second).Add(labels).Set(value);
+        (fit -> second).Add(labels).Set(value);
     }
     catch(std::exception &e) {
         ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
@@ -135,14 +140,15 @@ void Metrics::setGauge(const std::string &familyName, const labels_t &labels, do
 
 void Metrics::observeHistogram(const std::string &familyName, const labels_t &labels, double value, const bucket_boundaries_t & bucketBoundaries)
 {
-    auto it = histogram_families_.find(familyName);
-    if (it == histogram_families_.end())
+    auto fit = histogram_families_.find(familyName);
+    if (fit == histogram_families_.end())
     {
         ert::tracing::Logger::error("histogram family not found", ERT_FILE_LOCATION);
+        return;
     }
 
     try {
-        (it -> second).Add(labels, bucketBoundaries).Observe(value);
+        (fit -> second).Add(labels, bucketBoundaries).Observe(value);
     }
     catch(std::exception &e) {
         ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
