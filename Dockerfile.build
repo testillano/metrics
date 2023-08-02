@@ -8,7 +8,7 @@ WORKDIR /code/build
 
 ARG make_procs=4
 ARG build_type=Release
-ARG ert_logger_ver=v1.0.9
+ARG ert_logger_ver=v1.1.0
 ARG jupp0r_prometheuscpp_ver=v0.13.0
 ARG civetweb_civetweb_ver=v1.14
 
