@@ -64,7 +64,7 @@ counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const st
     auto fit = counter_families_.find(name);
     if (fit != counter_families_.end())
     {
-        ert::tracing::Logger::error("counter family already registered", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("counter family %s already registered", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
@@ -79,7 +79,7 @@ gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::s
     auto fit = gauge_families_.find(name);
     if (fit != gauge_families_.end())
     {
-        ert::tracing::Logger::error("gauge family already registered", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("gauge family %s already registered", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
@@ -94,7 +94,7 @@ histogram_family_ref_t Metrics::addHistogramFamily(const std::string &name, cons
     auto fit = histogram_families_.find(name);
     if (fit != histogram_families_.end())
     {
-        ert::tracing::Logger::error("histogram family already registered", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("histogram family %s already registered", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
@@ -109,7 +109,7 @@ void Metrics::increaseCounter(const std::string &familyName, const labels_t &lab
     auto fit = counter_families_.find(familyName);
     if (fit == counter_families_.end())
     {
-        ert::tracing::Logger::error("counter family not found", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("counter family %s not found", familyName.c_str()), ERT_FILE_LOCATION);
         return;
     }
 
@@ -126,7 +126,7 @@ void Metrics::setGauge(const std::string &familyName, const labels_t &labels, do
     auto fit = gauge_families_.find(familyName);
     if (fit == gauge_families_.end())
     {
-        ert::tracing::Logger::error("gauge family not found", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("gauge family %s not found", familyName.c_str()), ERT_FILE_LOCATION);
         return;
     }
 
@@ -143,7 +143,7 @@ void Metrics::observeHistogram(const std::string &familyName, const labels_t &la
     auto fit = histogram_families_.find(familyName);
     if (fit == histogram_families_.end())
     {
-        ert::tracing::Logger::error("histogram family not found", ERT_FILE_LOCATION);
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("histogram family %s not found", familyName.c_str()), ERT_FILE_LOCATION);
         return;
     }
 
