@@ -59,7 +59,7 @@ bool Metrics::serve(const std::string & endpoint)
     return true;
 }
 
-counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels)
+counter_family_t& Metrics::addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
     auto fit = counter_families_.find(name);
     if (fit != counter_families_.end())
@@ -74,7 +74,7 @@ counter_family_ref_t Metrics::addCounterFamily(const std::string &name, const st
     return cf;
 }
 
-gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels)
+gauge_family_t& Metrics::addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
     auto fit = gauge_families_.find(name);
     if (fit != gauge_families_.end())
@@ -89,7 +89,7 @@ gauge_family_ref_t Metrics::addGaugeFamily(const std::string &name, const std::s
     return gf;
 }
 
-histogram_family_ref_t Metrics::addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels)
+histogram_family_t& Metrics::addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
     auto fit = histogram_families_.find(name);
     if (fit != histogram_families_.end())

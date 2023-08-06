@@ -63,9 +63,9 @@ public:
 
     Observer(ert::metrics::Metrics *metrics) {
         try {
-            ert::metrics::counter_family_ref_t cf = metrics->addCounterFamily("observed_user_signals_total", "Number of observed user signals");
-            ert::metrics::gauge_family_ref_t gf = metrics->addGaugeFamily("current_seconds", "Instant random response time");
-            ert::metrics::histogram_family_ref_t hf = metrics->addHistogramFamily("random_time_responses", "Random response time");
+            ert::metrics::counter_family_t& cf = metrics->addCounterFamily("observed_user_signals_total", "Number of observed user signals");
+            ert::metrics::gauge_family_t& gf = metrics->addGaugeFamily("current_seconds", "Instant random response time");
+            ert::metrics::histogram_family_t& hf = metrics->addHistogramFamily("random_time_responses", "Random response time");
             /*
                         histogram_boundaries_.push_back(15.0);
                         histogram_boundaries_.push_back(20.0);
@@ -73,7 +73,7 @@ public:
                         histogram_boundaries_.push_back(30.0);
             */
 
-            //ert::metrics::counter_ref_t c = cf.Add({{"signal", "SIGUSR1"}});
+            //ert::metrics::counter_t& c = cf.Add({{"signal", "SIGUSR1"}});
             count_sigusr1_ = &(cf.Add({{"signal", "SIGUSR1"}}));
             count_sigusr2_ = &(cf.Add({{"signal", "SIGUSR2"}}));
             gauge_ = &(gf.Add({{"unit", "seconds"}}));
@@ -101,6 +101,7 @@ public:
 
 void sighndl(int signal)
 {
+    std::cout << '\n';
     LOGWARNING(ert::tracing::Logger::warning(ert::tracing::Logger::asString("Signal received: %d", signal), ERT_FILE_LOCATION));
     switch (signal) {
     case SIGTERM:
@@ -132,14 +133,15 @@ int main(int argc, char* argv[]) {
 
     ert::metrics::Metrics metrics;
 
-    if (!metrics.serve()) exit(1);
+    std::string endpoint = "0.0.0.0:8080";
+    if (!metrics.serve(endpoint)) exit(1);
 
     Observer observer(&metrics);
     G_observer = &observer;
 
     try {
-        ert::metrics::counter_family_ref_t cf = metrics.addCounterFamily("main_example_total", "Main example counter total");
-        ert::metrics::counter_ref_t c = cf.Add({});
+        ert::metrics::counter_family_t& cf = metrics.addCounterFamily("main_example_total", "Main example counter total");
+        ert::metrics::counter_t& c = cf.Add({});
 
         c.Increment(5);
     }
@@ -150,6 +152,16 @@ int main(int argc, char* argv[]) {
 
     int count = 0;
     const std::array<int, 4> timeResponses = {15, 20, 25, 30}; // range = 30-15 = 15; classes = 4; wide = 15/4 ~ 4;
+
+    std::cout << '\n';
+    std::cout << "Metrics URL:" << '\n';
+    std::cout << "   curl http://" << endpoint << "/metrics" << '\n';
+    std::cout << "SIGUSR1 counter:" << '\n';
+    std::cout << "   kill -SIGUSR1 $(pgrep measure)" << '\n';
+    std::cout << "SIGUSR2 counter:" << '\n';
+    std::cout << "   kill -SIGUSR2 $(pgrep measure)" << '\n';
+    std::cout << '\n';
+
     while(true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
 

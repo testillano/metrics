@@ -60,14 +60,8 @@ typedef std::map<std::string, std::string> labels_t;
 /** Prometheus counter type: cumulative metric that represents a single monotonically increasing counter (i.e.: requests sent, errors, etc.). */
 typedef prometheus::Counter counter_t;
 
-/** Prometheus counter reference type */
-typedef counter_t& counter_ref_t;
-
 /** Prometheus gauge type: single numerical value that can go up and down arbitrarily (i.e.: temperatures, memory usage, concurrent requests, etc.). */
 typedef prometheus::Gauge gauge_t;
-
-/** Prometheus gauge reference type */
-typedef gauge_t& gauge_ref_t;
 
 /**
  * Prometheus histogram type: samples observations within buckets of specific ranges (i.e.: requests durations, message sizes, etc.).
@@ -78,38 +72,26 @@ typedef gauge_t& gauge_ref_t;
  */
 typedef prometheus::Histogram histogram_t;
 
-/** Prometheus histogram reference type */
-typedef histogram_t& histogram_ref_t;
-
 /** Bucket boundaries for histogram */
 typedef std::vector<double> bucket_boundaries_t;
 
 /** Counters family */
 typedef prometheus::Family<prometheus::Counter> counter_family_t;
 
-/** Counters family reference */
-typedef counter_family_t& counter_family_ref_t;
-
 /** Gauges family */
 typedef prometheus::Family<prometheus::Gauge> gauge_family_t;
-
-/** Gauges family reference */
-typedef gauge_family_t& gauge_family_ref_t;
 
 /** Histograms family */
 typedef prometheus::Family<prometheus::Histogram> histogram_family_t;
 
-/** Histograms family reference */
-typedef histogram_family_t& histogram_family_ref_t;
-
 /** Map of counters family (indexed by counter name) */
-typedef std::unordered_map<std::string, counter_family_ref_t> counter_family_map_t;
+typedef std::unordered_map<std::string, counter_family_t&> counter_family_map_t;
 
 /** Map of gauges family (indexed by gauge name) */
-typedef std::unordered_map<std::string, gauge_family_ref_t> gauge_family_map_t;
+typedef std::unordered_map<std::string, gauge_family_t&> gauge_family_map_t;
 
 /** Map of histograms family (indexed by histogram name) */
-typedef std::unordered_map<std::string, histogram_family_ref_t> histogram_family_map_t;
+typedef std::unordered_map<std::string, histogram_family_t&> histogram_family_map_t;
 
 class Metrics {
 
@@ -146,32 +128,85 @@ public:
      * Example:
      *
      * <pre>
-     * ert::metrics::counter_family_ref_t cf = metrics->addCounterFamily("admin_server_observed_requests_total", "Http2 total requests observed in admin server");
+     * // Counter family with initial labels:
+     * ert::metrics::counter_family_t& observed_requests_counter_family_ref_ = metrics->addCounterFamily("admin_server_observed_requests_total", "Http2 total requests observed in admin server", {"type", "request"});
      * </pre>
      *
-     * Now you can create a counter:
+     * Or you may prefer to use pointers (this allows to build the family on constructor, where you could have more data available like the family name):
      *
      * <pre>
-     * counter_ref_t observed_requests_post_counter = cf.Add({"method", "POST"}); // statically added
+     * // class members
+     * ert::metrics::counter_family_t* observed_requests_counter_family_ptr_{};
+     * ...
+     * // constructor
+     * observed_requests_counter_family_ptr_ = &(metrics->addCounterFamily("admin_server_observed_requests_total", "Http2 total requests observed in admin server", {"type", "request"}));
      * </pre>
      *
-     * The drawback is that the counter cannot be reused in a different scope than the one where it is declared.
-     * You may think about repeating the declaration where it is needed, but 'Family<T>.Add()' is slow and should be avoided.
-     * So, counters should be created only once (i.e.: constructors), and pointers should be used to allow accessing them:
+     * Now you can create a counter (again, using pointers):
      *
      * <pre>
-     * counter_ref_t *observed_requests_post_counter = &(cf.Add({"method", "POST"}));
+     * // class members
+     * counter_t* observed_requests_post_counter_ptr_{};
+     * ...
+     * // constructor
+     * observed_requests_post_counter_ptr_ = &(observed_requests_counter_family_ptr_->Add({{"method", "POST"}}));
      * </pre>
      *
-     * That counter pointer could be a private member of the class containing the metrics, in order to operate it from any location.
+     * And use it:
      *
+     * <pre>
+     * // source code
+     * observed_requests_post_counter_ptr_->Increment(); // no cost for already added labels ('Family<T>.Add()' is not called anymore).
+     * </pre>
+     *
+     * So, counters should be created only once (i.e.: constructors), and pointers should be used to allow accessing them.
      * Take this source as example: https://github.com/testillano/http2comm/blob/6ff2a1706d584db057ab22c55da72775919e9320/src/Http2Server.cpp#L65
+     *
+     * To create dynamic counters (with specific labels), you will need to call Add():
+     *
+     * <pre>
+     * auto& counter = observed_requests_counter_family_ptr_->Add({{"status_code", std::to_string(status_code)}}); // dynamic labels are added to family ones ("type" in the example)
+     * counter.Increment();
+     * </pre>
+     *
+     * Here you can find a smart counter class, which optimizes the combination of static and dynamic labels:
+     *
+     * <pre>
+     * class MyCounter {
+     * public:
+     *     MyCounter(counter_family_t& family, const std::map<std::string, std::string>& staticLabels)
+     *         : family_(family), all_labels_(staticLabels) {}
+     *
+     *     void Increment(const std::map<std::string, std::string>& dynamicLabels) {
+     *         all_labels_.insert(dynamicLabels.begin(), dynamicLabels.end()); // join labels
+     *         auto& counter = family_.Add(all_labels_);
+     *         counter.Increment();
+     *     }
+     *
+     * private:
+     *     counter_family_t& family_;
+     *     std::map<std::string, std::string> all_labels_;
+     * };
+     * </pre>
+     *
+     * Note that dynamic labels should override all the possible labels added in the past with corresponding values,
+     * in order to keep coherence. It is good to add a fixed set of dynamic labels (i.e. the status code).
+     * So, you can instantiate a counter with initial labels, and then increment it with additional 'dynamic' ones:
+     *
+     * <pre>
+     * std::map<std::string, std::string> staticLabels = {{"method", "post"}};
+     * MyCounter myCounter(observed_requests_counter_family_ref_, staticLabels);
+     *
+     * // source code:
+     * std::map<std::string, std::string> dynamicLabels = {{"status_code", std::to_string(status_code)}};
+     * myCounter.Increment(dynamicLabels);
+     * </pre>
      *
      * @param name Family name
      * @param help Family help description
      * @param labels Family definition labels. Empty by default (a counter generated within this family could add additional labels).
      */
-    counter_family_ref_t addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
+    counter_family_t& addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
 
     /**
      * Add gauge family
@@ -185,7 +220,7 @@ public:
      *
      * @see addCounterFamily()
      */
-    gauge_family_ref_t addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
+    gauge_family_t& addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
 
     /**
      * Add histogram family
@@ -199,13 +234,13 @@ public:
      *
      * @see addCounterFamily()
      */
-    histogram_family_ref_t addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
+    histogram_family_t& addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels = {});
 
     /**
      * Increase counter
      *
      * Dynamic labels could be added, but take into account the performance impact doing this. It is better to create all the combinations at the beginning.
-     * Some times, needed labels are unpredictable, so you can add them to the initial labels configured in the corresponding family.
+     * This must be used only with unpredictable labels, which will be appended to the labels that were used to create the family (static initial labels).
      *
      * @param name Family name
      * @param labels Additional labels
@@ -217,7 +252,7 @@ public:
      * Update gauge
      *
      * Dynamic labels could be added, but take into account the performance impact doing this. It is better to create all the combinations at the beginning.
-     * Some times, needed labels are unpredictable, so you can add them to the initial labels configured in the corresponding family.
+     * This must be used only with unpredictable labels, which will be appended to the labels that were used to create the family (static initial labels).
      *
      * @param name Family name
      * @param labels Additional labels
@@ -229,7 +264,7 @@ public:
      * Observe histogram
      *
      * Dynamic labels could be added, but take into account the performance impact doing this. It is better to create all the combinations at the beginning.
-     * Some times, needed labels are unpredictable, so you can add them to the initial labels configured in the corresponding family.
+     * This must be used only with unpredictable labels, which will be appended to the labels that were used to create the family (static initial labels).
      *
      * @param name Family name
      * @param labels Additional labels
