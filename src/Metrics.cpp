@@ -61,6 +61,8 @@ bool Metrics::serve(const std::string & endpoint)
 
 counter_family_t& Metrics::addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
+    std::lock_guard<std::mutex> lock(counter_mutex_);
+
     auto fit = counter_families_.find(name);
     if (fit != counter_families_.end())
     {
@@ -76,6 +78,8 @@ counter_family_t& Metrics::addCounterFamily(const std::string &name, const std::
 
 gauge_family_t& Metrics::addGaugeFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
+    std::lock_guard<std::mutex> lock(gauge_mutex_);
+
     auto fit = gauge_families_.find(name);
     if (fit != gauge_families_.end())
     {
@@ -91,6 +95,8 @@ gauge_family_t& Metrics::addGaugeFamily(const std::string &name, const std::stri
 
 histogram_family_t& Metrics::addHistogramFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
+    std::lock_guard<std::mutex> lock(histogram_mutex_);
+
     auto fit = histogram_families_.find(name);
     if (fit != histogram_families_.end())
     {
@@ -106,6 +112,8 @@ histogram_family_t& Metrics::addHistogramFamily(const std::string &name, const s
 
 void Metrics::increaseCounter(const std::string &familyName, const labels_t &labels, double value)
 {
+    std::lock_guard<std::mutex> lock(counter_mutex_);
+
     auto fit = counter_families_.find(familyName);
     if (fit == counter_families_.end())
     {
@@ -123,6 +131,8 @@ void Metrics::increaseCounter(const std::string &familyName, const labels_t &lab
 
 void Metrics::setGauge(const std::string &familyName, const labels_t &labels, double value)
 {
+    std::lock_guard<std::mutex> lock(gauge_mutex_);
+
     auto fit = gauge_families_.find(familyName);
     if (fit == gauge_families_.end())
     {
@@ -140,6 +150,8 @@ void Metrics::setGauge(const std::string &familyName, const labels_t &labels, do
 
 void Metrics::observeHistogram(const std::string &familyName, const labels_t &labels, double value, const bucket_boundaries_t & bucketBoundaries)
 {
+    std::lock_guard<std::mutex> lock(histogram_mutex_);
+
     auto fit = histogram_families_.find(familyName);
     if (fit == histogram_families_.end())
     {

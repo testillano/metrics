@@ -41,6 +41,7 @@ SOFTWARE.
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <mutex>
 
 //#include <exception>
 
@@ -102,6 +103,10 @@ class Metrics {
     gauge_family_map_t gauge_families_;
     histogram_family_map_t histogram_families_;
 
+    mutable std::mutex counter_mutex_;
+    mutable std::mutex gauge_mutex_;
+    mutable std::mutex histogram_mutex_;
+
 public:
 
     /** Default constructor */
@@ -112,7 +117,9 @@ public:
 
     /** Default destructor */
     ~Metrics() {
-        delete(exposer_);
+        if (exposer_) {
+            delete exposer_;
+        }
     }
 
     /**
