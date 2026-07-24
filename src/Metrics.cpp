@@ -59,6 +59,17 @@ bool Metrics::serve(const std::string & endpoint)
     return true;
 }
 
+void Metrics::enableProcessMetrics(const std::string &source)
+{
+    if (!exposer_) {
+        ert::tracing::Logger::error("Cannot enable process metrics: exposer not initialized (call serve() first)", ERT_FILE_LOCATION);
+        return;
+    }
+
+    process_collector_ = std::make_shared<ProcessCollector>(source);
+    exposer_->RegisterCollectable(process_collector_);
+}
+
 counter_family_t& Metrics::addCounterFamily(const std::string &name, const std::string &help, const labels_t &labels)
 {
     std::lock_guard<std::mutex> lock(counter_mutex_);
@@ -123,6 +134,25 @@ void Metrics::increaseCounter(const std::string &familyName, const labels_t &lab
 
     try {
         (fit -> second).Add(labels).Increment(value); // negative values are ignored by prometheus-cpp
+    }
+    catch(std::exception &e) {
+        ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);
+    }
+}
+
+void Metrics::resetCounter(const std::string &familyName, const labels_t &labels)
+{
+    std::lock_guard<std::mutex> lock(counter_mutex_);
+
+    auto fit = counter_families_.find(familyName);
+    if (fit == counter_families_.end())
+    {
+        ert::tracing::Logger::error(ert::tracing::Logger::asString("counter family %s not found", familyName.c_str()), ERT_FILE_LOCATION);
+        return;
+    }
+
+    try {
+        (fit -> second).Add(labels).Reset();
     }
     catch(std::exception &e) {
         ert::tracing::Logger::error(e.what(), ERT_FILE_LOCATION);

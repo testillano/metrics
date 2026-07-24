@@ -1,5 +1,6 @@
 add_library (${ERT_METRICS_TARGET_NAME} STATIC
         ${CMAKE_CURRENT_LIST_DIR}/Metrics.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/ProcessCollector.cpp
 )
 
 target_include_directories(${ERT_METRICS_TARGET_NAME}

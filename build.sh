@@ -8,8 +8,8 @@ base_tag__dflt=latest
 make_procs__dflt=$(grep processor /proc/cpuinfo -c)
 build_type__dflt=Release
 ert_logger_ver__dflt=v1.1.1
-jupp0r_prometheuscpp_ver__dflt=v0.13.0
-civetweb_civetweb_ver__dflt=v1.14
+jupp0r_prometheuscpp_ver__dflt=v1.3.0
+civetweb_civetweb_ver__dflt=v1.16
 registry=ghcr.io/testillano
 
 #############

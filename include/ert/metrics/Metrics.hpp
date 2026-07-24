@@ -43,6 +43,8 @@ SOFTWARE.
 #include <unordered_map>
 #include <mutex>
 
+#include <ert/metrics/ProcessCollector.hpp>
+
 //#include <exception>
 
 
@@ -98,6 +100,7 @@ class Metrics {
 
     std::shared_ptr<prometheus::Registry> registry_;
     prometheus::Exposer *exposer_;
+    std::shared_ptr<ProcessCollector> process_collector_;
 
     counter_family_map_t counter_families_;
     gauge_family_map_t gauge_families_;
@@ -121,6 +124,16 @@ public:
             delete exposer_;
         }
     }
+
+    /**
+     * Enables process-level metrics collection (CPU, memory, FDs, threads).
+     * Metrics are collected lazily on each Prometheus scrape.
+     * Must be called after the exposer is initialized.
+     *
+     * @param source Label value for the "source" label on process metrics.
+     *              Typically the application/process name.
+     */
+    void enableProcessMetrics(const std::string &source);
 
     /**
      * Serves metrics exposer
@@ -254,6 +267,18 @@ public:
      * @param value Increase amount
      */
     void increaseCounter(const std::string &familyName, const labels_t &labels, double value = 1.0);
+
+    /**
+     * Reset counter to zero
+     *
+     * Useful for testing or periodic reporting scenarios where counters need to be restarted.
+     * Note: this violates Prometheus counter semantics (monotonically increasing), so use
+     * with care in production. Prometheus rate() will handle the reset correctly.
+     *
+     * @param familyName Family name
+     * @param labels Labels identifying the specific counter instance
+     */
+    void resetCounter(const std::string &familyName, const labels_t &labels);
 
     /**
      * Update gauge
