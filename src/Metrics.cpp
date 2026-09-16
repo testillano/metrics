@@ -77,7 +77,10 @@ counter_family_t& Metrics::addCounterFamily(const std::string &name, const std::
     auto fit = counter_families_.find(name);
     if (fit != counter_families_.end())
     {
-        ert::tracing::Logger::error(ert::tracing::Logger::asString("counter family %s already registered", name.c_str()), ERT_FILE_LOCATION);
+        // Returning an already-registered family is a legitimate get-or-create:
+        // multiple objects (e.g. per-worker clients) share the same family and
+        // each keeps its own instance-label counters via Add(). Not an error.
+        ert::tracing::Logger::debug(ert::tracing::Logger::asString("counter family %s already registered: returning existing one", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
@@ -94,7 +97,9 @@ gauge_family_t& Metrics::addGaugeFamily(const std::string &name, const std::stri
     auto fit = gauge_families_.find(name);
     if (fit != gauge_families_.end())
     {
-        ert::tracing::Logger::error(ert::tracing::Logger::asString("gauge family %s already registered", name.c_str()), ERT_FILE_LOCATION);
+        // Returning an already-registered family is a legitimate get-or-create
+        // (see addCounterFamily). Not an error.
+        ert::tracing::Logger::debug(ert::tracing::Logger::asString("gauge family %s already registered: returning existing one", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
@@ -111,7 +116,9 @@ histogram_family_t& Metrics::addHistogramFamily(const std::string &name, const s
     auto fit = histogram_families_.find(name);
     if (fit != histogram_families_.end())
     {
-        ert::tracing::Logger::error(ert::tracing::Logger::asString("histogram family %s already registered", name.c_str()), ERT_FILE_LOCATION);
+        // Returning an already-registered family is a legitimate get-or-create
+        // (see addCounterFamily). Not an error.
+        ert::tracing::Logger::debug(ert::tracing::Logger::asString("histogram family %s already registered: returning existing one", name.c_str()), ERT_FILE_LOCATION);
         return fit->second;
     }
 
